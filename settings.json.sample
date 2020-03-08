@@ -1,7 +1,7 @@
 {
   "api": "YOUR_BOT_API",
   "backup_chat_id": 00000000,
-  "chatids": {
+  "chat_ids": {
     "admins": [],
     "groups": [],
     "users": []

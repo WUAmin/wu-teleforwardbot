@@ -10,39 +10,6 @@ class AuthLevel(Enum):
     UNAUTHORIZED = -1
 
 
-#
-# class Settings:
-#     def __init__(self, api = None, chatids = None, forwards = None):
-#         self.api = api
-#         self.chatids = chatids
-#         self.forwards = forwards
-#
-#         json_path = os.path.join(os.path.dirname(__file__), 'wuteleforwardbot', 'settings.json')
-#         if os.path.exists(json_path):
-#             self.load_json_settings(json_path)
-#
-#
-#
-#     def to_dict(self):
-#         return {'api': self.api,
-#                 'chatids': self.chatids,
-#                 'forwards': self.forwards}
-#
-#
-#     def from_dict(self, _dict):
-#         self.api = _dict['api']
-#         self.chatids = _dict['chatids']
-#         self.forwards = _dict['forwards']
-#         return self
-#
-#
-#     # @staticmethod
-#     # def from_dict(_dict):
-#     #     return Settings(_dict['api'],
-#     #                     _dict['chatids'],
-#     #                     _dict['forwards'])
-
-
 api_token: str = "1"
 chat_ids: dict
 forward_rules: list
@@ -57,7 +24,7 @@ def load_json_settings(json_path):
             data_j = json.load(f)
             global api_token, chat_ids, forward_rules, contacts
             api_token = data_j['api']
-            chat_ids = data_j['chatids']
+            chat_ids = data_j['chat_ids']
             forward_rules = data_j['forwards']
             contacts = data_j['contacts']
             print("  ✅ Settings loaded with {} forward rules and {} contacts".format(len(forward_rules), len(contacts)))
@@ -75,7 +42,7 @@ def save_json_settings(json_path):
         with open(json_path, 'w') as f:
             json.dump({
                 "api": api_token,
-                "chatids": chat_ids,
+                "chat_ids": chat_ids,
                 "forwards": forward_rules,
                 "contacts": contacts
             }, f, sort_keys=False)
