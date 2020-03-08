@@ -1,0 +1,6 @@
+# Virtual Enviroments
+venv/
+venv-*/
+
+# Settings
+settings.json

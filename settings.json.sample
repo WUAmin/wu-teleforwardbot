@@ -1,0 +1,22 @@
+{
+  "api": "YOUR_BOT_API",
+  "backup_chat_id": 00000000,
+  "chatids": {
+    "admins": [],
+    "groups": [],
+    "users": []
+  },
+  "forwards": [
+    {
+      "from": -0000000000000,
+      "keywords": ["*"],
+      "to": -1111111111111
+    },
+    {
+      "from": -0000000000000,
+      "keywords": ["#keyword1", "#keyword2"],
+      "to": -2222222222222
+    }
+  ],
+  "contacts": []
+}
