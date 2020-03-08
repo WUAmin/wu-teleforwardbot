@@ -118,7 +118,7 @@ def all_msg(update, context):
                 "last_name": update.effective_chat.last_name,
                 "username": update.effective_chat.username,
             })
-            settings.save_json_settings(os.path.join(os.path.dirname(__file__), 'wuteleforwardbot', 'settings.json'))
+            settings.save_json_settings(os.path.join(os.path.dirname(__file__), 'settings.json'))
 
         # check forward rules on this msg
         for fr in settings.forward_rules:
@@ -143,7 +143,7 @@ def add_group(update, context):
 
 
 def init():
-    settings.load_json_settings(os.path.join(os.path.dirname(__file__), 'wuteleforwardbot', 'settings.json'))
+    settings.load_json_settings(os.path.join(os.path.dirname(__file__), 'settings.json'))
     updater = Updater(token=settings.api_token, use_context=True)
     dispatcher = updater.dispatcher
 
