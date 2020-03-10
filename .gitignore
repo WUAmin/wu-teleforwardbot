@@ -9,3 +9,7 @@ venv-*/
 
 # Settings
 settings.json
+
+
+# Cache
+__pycache__/
