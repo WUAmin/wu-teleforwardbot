@@ -1,13 +1,13 @@
+import logging
 import os
-import subprocess
 import sys
 
+import telegram  # https://github.com/python-telegram-bot/python-telegram-bot
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
-import telegram  # https://github.com/python-telegram-bot/python-telegram-bot
+
 import settings as settings
 from settings import AuthLevel
-import logging
 
 
 def check_auth(chat_id):
@@ -37,7 +37,8 @@ def log_update_simple(update):
 
 def button_manage_bot(update, context, must_edit=True):
     query = update.callback_query
-    keyboard = [[InlineKeyboardButton("Show Contacts", callback_data='show_contacts'),
+    keyboard = [[InlineKeyboardButton("Show Contacts", callback_data='show_contacts')],
+                [InlineKeyboardButton("Backup", callback_data='backup'),
                  InlineKeyboardButton("Update from git", callback_data='update_git')],
                 [InlineKeyboardButton("Restart Bot", callback_data='restart_bot'),
                  InlineKeyboardButton("Stop Bot", callback_data='stop_bot')]]
@@ -73,57 +74,82 @@ def button_stop_bot_confirm(update, context, must_edit=True):
 def buttons(update, context):
     auth_level = check_auth(update.effective_chat.id)
     query = update.callback_query
+    if query.data == 'backup':
+        # Send backup as reply
+        try:
+            query.edit_message_text(text="Sending backup...".format(len(settings.contacts)),
+                                    parse_mode=telegram.ParseMode.MARKDOWN)
+            context.bot.send_document(chat_id=update.effective_chat.id,
+                                      document=open(os.path.join(os.path.dirname(sys.argv[0]), 'settings.json'), 'rb'),
+                                      reply_to_message_id=update.effective_message.message_id)
+        except Exception as e:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                     reply_to_message_id=update.effective_message.message_id)
     if query.data == 'show_contacts':
-        # run "git pull" on system
-        query.edit_message_text(text="There was {} contacts".format(len(settings.contacts)),
-                                parse_mode=telegram.ParseMode.MARKDOWN)
-        for c in settings.contacts:
-            msg = 'Title: *{}*\n'.format(c['title'])
-            msg += 'Type: *{}*\n'.format(c['type'])
-            msg += 'ID: `{}`\n'.format(c['id'])
-            msg += 'Name: *{} {}*\n'.format(c['first_name'], c['last_name'])
-            msg += 'Username: *{}*\n'.format(c['username'])
-            update.effective_message.reply_text(
-                msg, parse_mode=telegram.ParseMode.MARKDOWN)
-
+        # Show Contacts
+        try:
+            query.edit_message_text(text="There was {} contacts".format(len(settings.contacts)),
+                                    parse_mode=telegram.ParseMode.MARKDOWN)
+            for c in settings.contacts:
+                msg = 'Title: *{}*\n'.format(c['title'])
+                msg += 'Type: *{}*\n'.format(c['type'])
+                msg += 'ID: `{}`\n'.format(c['id'])
+                msg += 'Name: *{} {}*\n'.format(c['first_name'], c['last_name'])
+                msg += 'Username: *{}*\n'.format(c['username'])
+                update.effective_message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                     reply_to_message_id=update.effective_message.message_id)
     elif query.data == 'update_git':
-        # run "git pull" on system
-        p = os.popen(r'cd "{}";git pull'.format(
-            os.path.dirname(os.path.realpath(sys.argv[0]))))
-        msg = p.read()
-        query.edit_message_text(text="Update from git: ```{}```".format(msg),
-                                parse_mode=telegram.ParseMode.MARKDOWN)
+        # Update bot from git
+        try:
+            p = os.popen(r'cd "{}";git pull'.format(
+                os.path.dirname(os.path.realpath(sys.argv[0]))))
+            msg = p.read()
+            query.edit_message_text(text="Update from git: ```{}```".format(msg),
+                                    parse_mode=telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                     reply_to_message_id=update.effective_message.message_id)
     elif query.data == 'restart_bot':
-        # run "git pull" on system
-        msd_d = query.edit_message_text(
-            text="Restarting Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
-        p = os.popen(
-            r'cd "{}";kill -9 {}; python3 {} --restart={},{}'.format(os.path.dirname(os.path.realpath(sys.argv[0])),
-                                                                     os.getpid(), os.path.realpath(
-                                                                         sys.argv[0]),
-                                                                     msd_d['message_id'],
-                                                                     msd_d['chat']['id']))
-        msg = p.read()
-        query.edit_message_text(text="Restarting Bot: ```{}```".format(msg),
-                                parse_mode=telegram.ParseMode.MARKDOWN)
+        # Restart Bot
+        try:
+            msd_d = query.edit_message_text(
+                text="Restarting Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
+            p = os.popen(
+                r'cd "{}";kill -9 {}; python3 {} --restart={},{}'.format(os.path.dirname(os.path.realpath(sys.argv[0])),
+                                                                         os.getpid(), os.path.realpath(sys.argv[0]),
+                                                                         msd_d['message_id'], msd_d['chat']['id']))
+            msg = p.read()
+            query.edit_message_text(text="Restarting Bot: ```{}```".format(msg),
+                                    parse_mode=telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                     reply_to_message_id=update.effective_message.message_id)
     elif query.data == 'stop_bot':
+        # Stop bot
         button_stop_bot_confirm(update, context, must_edit=True)
     elif query.data == 'stop_bot_yes':
-        # run "git pull" on system
-        msd_d = query.edit_message_text(
-            text="Stopping Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
-        p = os.popen(
-            r'cd "{}";kill -9 {}'.format(os.path.dirname(os.path.realpath(sys.argv[0])), os.getpid()))
-        msg = p.read()
-        query.edit_message_text(text="Stpping bot Bot: ```{}```".format(
-            msg), parse_mode=telegram.ParseMode.MARKDOWN)
+        # Yes to stop bot
+        try:
+            query.edit_message_text(
+                text="Stopping Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
+            p = os.popen(
+                r'cd "{}";kill -9 {}'.format(os.path.dirname(os.path.realpath(sys.argv[0])), os.getpid()))
+            msg = p.read()
+            query.edit_message_text(text="Stpping bot Bot: ```{}```".format(
+                msg), parse_mode=telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                     reply_to_message_id=update.effective_message.message_id)
     elif query.data == 'stop_bot_no':
-        query.edit_message_text(
-            text="Good!", parse_mode=telegram.ParseMode.MARKDOWN)
+        # No to stop bot
+        query.edit_message_text(text="Good!", parse_mode=telegram.ParseMode.MARKDOWN)
     elif query.data == 'my_chat_id':
-        query.edit_message_text(text="Your User ID: `{}`\nLevel: *{}*".format(update.effective_chat.id,
-                                                                              auth_level.name),
-                                parse_mode=telegram.ParseMode.MARKDOWN)
+        # Show chat id
+        query.edit_message_text(
+            text="Your User ID: `{}`\nLevel: *{}*".format(update.effective_chat.id, auth_level.name),
+            parse_mode=telegram.ParseMode.MARKDOWN)
 
 
 def cmd_start(update, context):
