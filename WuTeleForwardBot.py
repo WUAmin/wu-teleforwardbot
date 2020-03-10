@@ -162,7 +162,7 @@ def cmd_id(update, context):
         print("Error: %s" % str(e))
 
 
-def manage_bot(update, context):
+def cmd_manage_bot(update, context):
     try:
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
@@ -239,7 +239,7 @@ def main():
     dispatcher.add_handler(cmd_id_handler)
 
     # Register Manage Bot
-    manage_bot_handler = CommandHandler('managebot', manage_bot)
+    manage_bot_handler = CommandHandler('managebot', cmd_manage_bot)
     dispatcher.add_handler(manage_bot_handler)
 
     # Register inline buttons
