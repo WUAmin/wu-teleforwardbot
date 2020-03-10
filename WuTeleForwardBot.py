@@ -83,20 +83,24 @@ def buttons(update, context):
             msg += 'ID: `{}`\n'.format(c['id'])
             msg += 'Name: *{} {}*\n'.format(c['first_name'], c['last_name'])
             msg += 'Username: *{}*\n'.format(c['username'])
-            update.effective_message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
+            update.effective_message.reply_text(
+                msg, parse_mode=telegram.ParseMode.MARKDOWN)
 
     elif query.data == 'update_git':
         # run "git pull" on system
-        p = os.popen(r'cd "{}";git pull'.format(os.path.dirname(os.path.realpath(sys.argv[0]))))
+        p = os.popen(r'cd "{}";git pull'.format(
+            os.path.dirname(os.path.realpath(sys.argv[0]))))
         msg = p.read()
         query.edit_message_text(text="Update from git: ```{}```".format(msg),
                                 parse_mode=telegram.ParseMode.MARKDOWN)
     elif query.data == 'restart_bot':
         # run "git pull" on system
-        msd_d = query.edit_message_text(text="Restarting Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
+        msd_d = query.edit_message_text(
+            text="Restarting Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
         p = os.popen(
             r'cd "{}";kill -9 {}; python3 {} --restart={},{}'.format(os.path.dirname(os.path.realpath(sys.argv[0])),
-                                                                     os.getpid(), os.path.realpath(sys.argv[0]),
+                                                                     os.getpid(), os.path.realpath(
+                                                                         sys.argv[0]),
                                                                      msd_d['message_id'],
                                                                      msd_d['chat']['id']))
         msg = p.read()
@@ -106,12 +110,16 @@ def buttons(update, context):
         button_stop_bot_confirm(update, context, must_edit=True)
     elif query.data == 'stop_bot_yes':
         # run "git pull" on system
-        msd_d = query.edit_message_text(text="Stopping Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
-        p = os.popen(r'cd "{}";kill -9 {}'.format(os.path.dirname(os.path.realpath(sys.argv[0])), os.getpid()))
+        msd_d = query.edit_message_text(
+            text="Stopping Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
+        p = os.popen(
+            r'cd "{}";kill -9 {}'.format(os.path.dirname(os.path.realpath(sys.argv[0])), os.getpid()))
         msg = p.read()
-        query.edit_message_text(text="Stpping bot Bot: ```{}```".format(msg), parse_mode=telegram.ParseMode.MARKDOWN)
+        query.edit_message_text(text="Stpping bot Bot: ```{}```".format(
+            msg), parse_mode=telegram.ParseMode.MARKDOWN)
     elif query.data == 'stop_bot_no':
-        query.edit_message_text(text="Good!", parse_mode=telegram.ParseMode.MARKDOWN)
+        query.edit_message_text(
+            text="Good!", parse_mode=telegram.ParseMode.MARKDOWN)
     elif query.data == 'my_chat_id':
         query.edit_message_text(text="Your User ID: `{}`\nLevel: *{}*".format(update.effective_chat.id,
                                                                               auth_level.name),
@@ -123,10 +131,12 @@ def cmd_start(update, context):
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
         if auth_level.value >= AuthLevel.ADMIN.value:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="{}x Hello".format(auth_level))
+            context.bot.send_message(
+                chat_id=update.effective_chat.id, text="{}x Hello".format(auth_level))
         # ------------- MOD_LEVEL --------------
         elif auth_level.value >= AuthLevel.MOD.value:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="{}x Hello".format(auth_level))
+            context.bot.send_message(
+                chat_id=update.effective_chat.id, text="{}x Hello".format(auth_level))
         # ------------ USERS_LEVEL -------------
         # --------- UNAUTHORIZED_LEVEL ---------
         # --------------------------------------
@@ -143,7 +153,8 @@ def cmd_id(update, context):
             keyboard = [[InlineKeyboardButton("My Chat ID", callback_data='my_chat_id'),
                          InlineKeyboardButton("Next Message Chat ID", callback_data='next_chat_id')]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            update.message.reply_text('Please choose:', reply_markup=reply_markup)
+            update.message.reply_text(
+                'Please choose:', reply_markup=reply_markup)
         # ------------ USERS_LEVEL -------------
         # --------- UNAUTHORIZED_LEVEL ---------
         # --------------------------------------
@@ -192,7 +203,8 @@ def all_msg(update, context):
                 "last_name": update.effective_chat.last_name,
                 "username": update.effective_chat.username,
             })
-            settings.save_json_settings(os.path.join(os.path.dirname(sys.argv[0]), 'settings.json'))
+            settings.save_json_settings(os.path.join(
+                os.path.dirname(sys.argv[0]), 'settings.json'))
 
         # check forward rules on this msg
         for fr in settings.forward_rules:
@@ -208,7 +220,8 @@ def all_msg(update, context):
 
 
 def main():
-    settings.load_json_settings(os.path.join(os.path.dirname(sys.argv[0]), 'settings.json'))
+    settings.load_json_settings(os.path.join(
+        os.path.dirname(sys.argv[0]), 'settings.json'))
     updater = Updater(token=settings.api_token, use_context=True)
     dispatcher = updater.dispatcher
 
@@ -237,7 +250,8 @@ def main():
     # dispatcher.add_handler(textmsg_handler)
 
     # Register all messages
-    allmsg_handler = MessageHandler(Filters.all, all_msg, message_updates=True, channel_post_updates=True)
+    allmsg_handler = MessageHandler(
+        Filters.all, all_msg, message_updates=True, channel_post_updates=True)
     dispatcher.add_handler(allmsg_handler)
 
     # parse arguments
