@@ -4,6 +4,8 @@ venv-*/
 
 # IDE
 .idea/
+.vscode/
+*.code-workspace
 
 # Settings
 settings.json
