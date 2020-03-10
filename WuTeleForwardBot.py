@@ -35,23 +35,6 @@ def log_update_simple(update):
         update.effective_message.text))
 
 
-def cmd_start(update, context):
-    try:
-        auth_level = check_auth(update.effective_chat.id)
-        # ------------ ADMIN_LEVEL -------------
-        if auth_level.value >= AuthLevel.ADMIN.value:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="{}x Hello".format(auth_level))
-        # ------------ MOD_LEVEL ------------
-        elif auth_level.value >= AuthLevel.MOD.value:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="{}x Hello".format(auth_level))
-        # ------------ USERS_LEVEL -------------
-        elif auth_level.value >= AuthLevel.USER.value:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="{}x Hello".format(auth_level))
-        # --------- UNAUTHORIZED_LEVEL ---------
-    except Exception as e:
-        print("Error: %s" % str(e))
-
-
 def button_manage_bot(update, context, must_edit=True):
     query = update.callback_query
     keyboard = [[InlineKeyboardButton("Show Contacts", callback_data='show_contacts'),
@@ -135,27 +118,35 @@ def buttons(update, context):
                                 parse_mode=telegram.ParseMode.MARKDOWN)
 
 
+def cmd_start(update, context):
+    try:
+        auth_level = check_auth(update.effective_chat.id)
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="{}x Hello".format(auth_level))
+        # ------------- MOD_LEVEL --------------
+        elif auth_level.value >= AuthLevel.MOD.value:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="{}x Hello".format(auth_level))
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
+    except Exception as e:
+        print("Error: %s" % str(e))
+
+
 def cmd_id(update, context):
     try:
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
-        # ------------ MOD_LEVEL ------------
+        # ------------- MOD_LEVEL --------------
         if auth_level.value >= AuthLevel.MOD.value:
             keyboard = [[InlineKeyboardButton("My Chat ID", callback_data='my_chat_id'),
                          InlineKeyboardButton("Next Message Chat ID", callback_data='next_chat_id')]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             update.message.reply_text('Please choose:', reply_markup=reply_markup)
         # ------------ USERS_LEVEL -------------
-        # elif auth_level.value >= AuthLevel.USER.value:
-        #     msg += "\nLevel: *{}*".format(auth_level.name)
-        #     pass
         # --------- UNAUTHORIZED_LEVEL ---------
-        else:
-            context.bot.send_message(chat_id=update.effective_chat.id,
-                                     reply_to_message_id=update.message.message_id,
-                                     text="Your User ID: `{}`".format(update.message.chat_id,
-                                                                      update.message.message_id),
-                                     parse_mode=telegram.ParseMode.MARKDOWN)
+        # --------------------------------------
     except Exception as e:
         print("Error: %s" % str(e))
 
@@ -166,9 +157,10 @@ def manage_bot(update, context):
         # ------------ ADMIN_LEVEL -------------
         if auth_level.value >= AuthLevel.ADMIN.value:
             button_manage_bot(update, context, must_edit=False)
-        # ------------ MOD_LEVEL ------------
+        # ------------- MOD_LEVEL --------------
         # ------------ USERS_LEVEL -------------
         # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
     except Exception as e:
         print("Error: %s" % str(e))
 
@@ -179,18 +171,11 @@ def all_msg(update, context):
         log_update_simple(update)
         # ------------ ADMIN_LEVEL -------------
         if auth_level.value >= AuthLevel.ADMIN.value:
-            # context.bot.send_message(chat_id=update.effective_chat.id, reply_to_message_id=update.message.message_id,
-            #                          text="Your User ID: `{}`\nYour Message ID: `{}`"
-            #                          .format(update.message.chat_id, update.message.message_id),
-            #                          parse_mode=telegram.ParseMode.MARKDOWN)
             pass
-        # ------------ MOD_LEVEL ------------
-        elif auth_level.value >= AuthLevel.MOD.value:
-            # if update.effective_chat.id == settings.settings.WuMedia2_ID:
-            #     add_filename_to_media(update)
-            pass
+        # ------------- MOD_LEVEL --------------
         # ------------ USERS_LEVEL -------------
         # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
 
         # Search for new contacts
         found_contact = False
@@ -218,14 +203,8 @@ def all_msg(update, context):
                                                     from_chat_id=update.effective_message.chat_id,
                                                     message_id=update.effective_message.message_id)
                         break
-
     except Exception as e:
         print("Error: %s" % str(e))
-
-
-def add_group(update, context):
-    for member in update.message.new_chat_members:
-        update.message.reply_text("{username} add group".format(username=member.username))
 
 
 def main():
@@ -260,9 +239,6 @@ def main():
     # Register all messages
     allmsg_handler = MessageHandler(Filters.all, all_msg, message_updates=True, channel_post_updates=True)
     dispatcher.add_handler(allmsg_handler)
-
-    add_group_handle = MessageHandler(Filters.status_update.new_chat_members, add_group)
-    dispatcher.add_handler(add_group_handle)
 
     # parse arguments
     for arg in sys.argv:
