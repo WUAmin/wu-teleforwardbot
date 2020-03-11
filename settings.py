@@ -1,5 +1,4 @@
 import json
-import os
 from enum import Enum
 
 
@@ -14,7 +13,7 @@ api_token: str = "1"
 chat_ids: dict
 forward_rules: list
 contacts: list
-
+new_rule: dict = {}
 
 def load_json_settings(json_path):
     """ return Settings if loaded queue successfully from disk"""
@@ -45,7 +44,7 @@ def save_json_settings(json_path):
                 "chat_ids": chat_ids,
                 "forwards": forward_rules,
                 "contacts": contacts
-            }, f, sort_keys=False)
+            }, f, sort_keys=True)
             print("  ✅ Settings saved with {} contacts".format(len(contacts)))
             return True
     except Exception as e:
