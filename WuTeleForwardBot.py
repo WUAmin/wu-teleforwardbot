@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+import uuid
 
 import telegram  # https://github.com/python-telegram-bot/python-telegram-bot
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove, ReplyKeyboardMarkup
@@ -11,8 +12,8 @@ import settings as settings
 from settings import AuthLevel
 
 
-NF_GETSOURCEID_TYPE, NF_GETSOURCEID_FORWARD, NF_GETSOURCEID_ID, NF_GETDESTINATION_TYPE, NF_GETDESTINATION_FORWARD, NF_GETDESTINATION_ID, NF_GETKEYWORDS, NF_VERIFY, GENDER, PHOTO, LOCATION, BIO = range(
-    12)
+NF_GETSOURCEID_TYPE, NF_GETSOURCEID_FORWARD, NF_GETSOURCEID_ID, NF_GETDESTINATION_TYPE, NF_GETDESTINATION_FORWARD, NF_GETDESTINATION_ID, NF_GETKEYWORDS, NF_VERIFY = range(
+    8)
 # Setup Log
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -115,9 +116,46 @@ def buttons(update, context):
             query.edit_message_text(text="There was {} rules".format(len(settings.forward_rules)),
                                     parse_mode=telegram.ParseMode.MARKDOWN)
             for r in settings.forward_rules:
-                update.effective_message.reply_text(f'```{json.dumps(r, indent=2, sort_keys=True)}```',
-                                                    reply_to_message_id=update.effective_message.message_id,
-                                                    parse_mode=telegram.ParseMode.MARKDOWN)
+                keyboard = [[InlineKeyboardButton("Detail", callback_data=f"detail_rule_{r['uuid']}")],
+                            [InlineKeyboardButton("Delete", callback_data=f"delete_rule_{r['uuid']}")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                update.effective_message.reply_text(
+                    f"*{r['from']['title']}* `->` *{r['to']['title']}*\n{'|'.join(r['keywords'])}",
+                    reply_to_message_id=update.effective_message.message_id,
+                    reply_markup=reply_markup,
+                    parse_mode=telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                     reply_to_message_id=update.effective_message.message_id)
+    if query.data.startswith('delete_rule_'):
+        # Delete Rules
+        try:
+            r_uuid = query.data[12:]
+            # query.edit_message_text(text="Deleting rule".format(len(settings.forward_rules)),
+            #                         parse_mode=telegram.ParseMode.MARKDOWN)
+            for r in settings.forward_rules:
+                if r['uuid'] == r_uuid:
+                    query.edit_message_text(
+                        f"*{r['from']['title']}* `->` *{r['to']['title']}*\n{'|'.join(r['keywords'])}\n\n🗑 Deleted.",
+                        reply_to_message_id=update.effective_message.message_id,
+                        parse_mode=telegram.ParseMode.MARKDOWN)
+                    settings.forward_rules.remove(r)
+        except Exception as e:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                     reply_to_message_id=update.effective_message.message_id)
+    if query.data.startswith('detail_rule_'):
+        # Detail Rules
+        try:
+            r_uuid = query.data[12:]
+            # query.edit_message_text(text="Deleting rule".format(len(settings.forward_rules)),
+            #                         parse_mode=telegram.ParseMode.MARKDOWN)
+            for r in settings.forward_rules:
+                if r['uuid'] == r_uuid:
+                    query.edit_message_text(
+                        f"*{r['from']['title']}* `->` *{r['to']['title']}*\n{'|'.join(r['keywords'])}\n\n```{json.dumps(r, indent=2, sort_keys=True)}```",
+                        reply_to_message_id=update.effective_message.message_id,
+                        parse_mode=telegram.ParseMode.MARKDOWN)
+                    break
         except Exception as e:
             context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
                                      reply_to_message_id=update.effective_message.message_id)
@@ -173,7 +211,7 @@ def buttons(update, context):
             parse_mode=telegram.ParseMode.MARKDOWN)
 
 
-def cmd_newforward_start(update, context):
+def newforward_start(update, context):
     try:
         reply_keyboard = [['Forward from Channel'], ['Enter ID/Username']]
         update.message.reply_text('To add new *ForwardRule*, follow these steps:\n'
@@ -197,7 +235,7 @@ def cmd_newforward_start(update, context):
     return ConversationHandler.END
 
 
-def cmd_newforward_get_source_id_type(update, context):
+def newforward_get_source_id_type(update, context):
     logger.info("Input type: %s", update.message.text)
     if update.message.text == 'Forward from Channel':
         update.message.reply_text(f'*{update.message.text}*\n'
@@ -221,7 +259,7 @@ def cmd_newforward_get_source_id_type(update, context):
         return NF_GETSOURCEID_TYPE
 
 
-def cmd_newforward_get_source_forward(update, context):
+def newforward_get_source_forward(update, context):
     try:
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
@@ -269,7 +307,7 @@ def cmd_newforward_get_source_forward(update, context):
     return ConversationHandler.END
 
 
-def cmd_newforward_get_source_id(update, context):
+def newforward_get_source_id(update, context):
     try:
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
@@ -305,7 +343,7 @@ def cmd_newforward_get_source_id(update, context):
             else:
                 update.message.reply_text("Follow the instructions and try again!",
                                           parse_mode=telegram.ParseMode.MARKDOWN, reply_markup=ReplyKeyboardRemove())
-                return cmd_newforward_start(update, context)
+                return newforward_start(update, context)
 
         # ------------ USERS_LEVEL -------------
         # --------- UNAUTHORIZED_LEVEL ---------
@@ -314,11 +352,11 @@ def cmd_newforward_get_source_id(update, context):
         logger.error(str(e))
         update.message.reply_text("Follow the instructions and try again!\n```{}```".format(str(e)),
                                   parse_mode=telegram.ParseMode.MARKDOWN, reply_markup=ReplyKeyboardRemove())
-        return cmd_newforward_start(update, context)
+        return newforward_start(update, context)
     return ConversationHandler.END
 
 
-def cmd_newforward_get_keywords(update, context):
+def newforward_get_keywords(update, context):
     try:
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
@@ -347,7 +385,7 @@ def cmd_newforward_get_keywords(update, context):
             else:
                 update.message.reply_text("Follow the instructions and try again!",
                                           parse_mode=telegram.ParseMode.MARKDOWN, reply_markup=ReplyKeyboardRemove())
-                return cmd_newforward_start(update, context)
+                return newforward_start(update, context)
 
         # ------------ USERS_LEVEL -------------
         # --------- UNAUTHORIZED_LEVEL ---------
@@ -356,11 +394,11 @@ def cmd_newforward_get_keywords(update, context):
         logger.error(str(e))
         update.message.reply_text("Follow the instructions and try again!\n```{}```".format(str(e)),
                                   parse_mode=telegram.ParseMode.MARKDOWN, reply_markup=ReplyKeyboardRemove())
-        return cmd_newforward_start(update, context)
+        return newforward_start(update, context)
     return ConversationHandler.END
 
 
-def cmd_newforward_get_destination_type(update, context):
+def newforward_get_destination_type(update, context):
     logger.info("Input type: %s", update.message.text)
     if update.message.text == 'Forward from Channel':
         update.message.reply_text(f'*{update.message.text}*\n'
@@ -384,7 +422,7 @@ def cmd_newforward_get_destination_type(update, context):
         return NF_GETDESTINATION_TYPE
 
 
-def cmd_newforward_get_destination_forward(update, context):
+def newforward_get_destination_forward(update, context):
     try:
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
@@ -431,7 +469,7 @@ def cmd_newforward_get_destination_forward(update, context):
     return ConversationHandler.END
 
 
-def cmd_newforward_get_destination_id(update, context):
+def newforward_get_destination_id(update, context):
     try:
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
@@ -479,13 +517,14 @@ def cmd_newforward_get_destination_id(update, context):
     return ConversationHandler.END
 
 
-def cmd_newforward_verify(update, context):
+def newforward_verify(update, context):
     try:
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
         # ------------- MOD_LEVEL --------------
         if auth_level.value >= AuthLevel.MOD.value:
             if update.message.text == 'Yes':
+                settings.new_rule['uuid'] = str(uuid.uuid4())
                 settings.forward_rules.append(settings.new_rule)
                 settings.save_json_settings(os.path.join(os.path.dirname(sys.argv[0]), 'settings.json'))
                 settings.new_rule = {}
@@ -504,6 +543,16 @@ def cmd_newforward_verify(update, context):
         update.message.reply_text("Follow the instructions and try again!\n```{}```".format(str(e)),
                                   parse_mode=telegram.ParseMode.MARKDOWN, reply_markup=ReplyKeyboardRemove())
         return NF_GETDESTINATION_TYPE
+    return ConversationHandler.END
+
+
+def cancel_conversation(update, context):
+    # Reset new rule data
+    settings.new_rule = {}
+    user = update.message.from_user
+    logger.info("User %s canceled the conversation.", user.first_name)
+    update.message.reply_text('Bye! I hope we can talk again some day.',
+                              reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
 
@@ -569,81 +618,13 @@ def cmd_newforward(update, context):
     # ------------ ADMIN_LEVEL -------------
     # ------------- MOD_LEVEL --------------
     if auth_level.value >= AuthLevel.MOD.value:
-        return cmd_newforward_start(update, context)
+        return newforward_start(update, context)
     # ------------ USERS_LEVEL -------------
     # --------- UNAUTHORIZED_LEVEL ---------
     # --------------------------------------
 
     return ConversationHandler.END
 
-
-def gender(update, context):
-    user = update.message.from_user
-    logger.info("Gender of %s: %s", user.first_name, update.message.text)
-    update.message.reply_text('I see! Please send me a photo of yourself, '
-                              'so I know what you look like, or send /skip if you don\'t want to.',
-                              reply_markup=ReplyKeyboardRemove())
-    return PHOTO
-
-
-def photo(update, context):
-    user = update.message.from_user
-    photo_file = update.message.photo[-1].get_file()
-    photo_file.download('user_photo.jpg')
-    logger.info("Photo of %s: %s", user.first_name, 'user_photo.jpg')
-    update.message.reply_text('Gorgeous! Now, send me your location please, '
-                              'or send /skip if you don\'t want to.')
-
-    return LOCATION
-
-
-def skip_photo(update, context):
-    user = update.message.from_user
-    logger.info("User %s did not send a photo.", user.first_name)
-    update.message.reply_text('I bet you look great! Now, send me your location please, '
-                              'or send /skip.')
-
-    return LOCATION
-
-
-def location(update, context):
-    user = update.message.from_user
-    user_location = update.message.location
-    logger.info("Location of %s: %f / %f", user.first_name, user_location.latitude,
-                user_location.longitude)
-    update.message.reply_text('Maybe I can visit you sometime! '
-                              'At last, tell me something about yourself.')
-
-    return BIO
-
-
-def skip_location(update, context):
-    user = update.message.from_user
-    logger.info("User %s did not send a location.", user.first_name)
-    update.message.reply_text('You seem a bit paranoid! '
-                              'At last, tell me something about yourself.')
-
-    return BIO
-
-
-def bio(update, context):
-    user = update.message.from_user
-    logger.info("Bio of %s: %s", user.first_name, update.message.text)
-    update.message.reply_text('Thank you! I hope we can talk again some day.')
-
-    return ConversationHandler.END
-
-
-def cancel(update, context):
-    # Reset new rule data
-    settings.new_rule = {}
-
-    user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
-    update.message.reply_text('Bye! I hope we can talk again some day.',
-                              reply_markup=ReplyKeyboardRemove())
-
-    return ConversationHandler.END
 
 
 def all_msg(update, context):
@@ -716,28 +697,18 @@ def main():
 
         states={
             NF_GETSOURCEID_TYPE: [MessageHandler(Filters.regex('^(Forward from Channel|Enter ID/Username)$'),
-                                                 cmd_newforward_get_source_id_type)],
-            NF_GETSOURCEID_FORWARD: [MessageHandler(Filters.forwarded, cmd_newforward_get_source_forward)],
-            NF_GETSOURCEID_ID: [MessageHandler(Filters.text, cmd_newforward_get_source_id)],
-            NF_GETKEYWORDS: [MessageHandler(Filters.text, cmd_newforward_get_keywords)],
+                                                 newforward_get_source_id_type)],
+            NF_GETSOURCEID_FORWARD: [MessageHandler(Filters.forwarded, newforward_get_source_forward)],
+            NF_GETSOURCEID_ID: [MessageHandler(Filters.text, newforward_get_source_id)],
+            NF_GETKEYWORDS: [MessageHandler(Filters.text, newforward_get_keywords)],
             NF_GETDESTINATION_TYPE: [MessageHandler(Filters.regex('^(Forward from Channel|Enter ID/Username)$'),
-                                                    cmd_newforward_get_destination_type)],
-            NF_GETDESTINATION_FORWARD: [MessageHandler(Filters.forwarded, cmd_newforward_get_destination_forward)],
-            NF_GETDESTINATION_ID: [MessageHandler(Filters.text, cmd_newforward_get_destination_id)],
-            NF_VERIFY: [MessageHandler(Filters.regex('^(Yes|No)$'), cmd_newforward_verify)],
-
-            GENDER: [MessageHandler(Filters.regex('^(Boy|Girl|Other)$'), gender)],
-
-            PHOTO: [MessageHandler(Filters.photo, photo),
-                    CommandHandler('skip', skip_photo)],
-
-            LOCATION: [MessageHandler(Filters.location, location),
-                       CommandHandler('skip', skip_location)],
-
-            BIO: [MessageHandler(Filters.text, bio)]
+                                                    newforward_get_destination_type)],
+            NF_GETDESTINATION_FORWARD: [MessageHandler(Filters.forwarded, newforward_get_destination_forward)],
+            NF_GETDESTINATION_ID: [MessageHandler(Filters.text, newforward_get_destination_id)],
+            NF_VERIFY: [MessageHandler(Filters.regex('^(Yes|No)$'), newforward_verify)],
         },
 
-        fallbacks=[CommandHandler('cancel', cancel)]
+        fallbacks=[CommandHandler('cancel', cancel_conversation)]
     )
     dispatcher.add_handler(CallbackQueryHandler(buttons))
 
