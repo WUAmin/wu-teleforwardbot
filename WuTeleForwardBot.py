@@ -144,8 +144,8 @@ def buttons(update, context):
                 query.edit_message_text(text="There was {} rules".format(len(settings.forward_rules)),
                                         parse_mode=telegram.ParseMode.MARKDOWN)
                 for r in settings.forward_rules:
-                    keyboard = [[InlineKeyboardButton("Detail", callback_data=f"detail_rule_{r['uuid']}")],
-                                [InlineKeyboardButton("Delete", callback_data=f"delete_rule_{r['uuid']}")]]
+                    keyboard = [[InlineKeyboardButton("Detail", callback_data=f"detail_rule_{r['uuid']}"),
+                                InlineKeyboardButton("Delete", callback_data=f"delete_rule_{r['uuid']}")]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
                     update.effective_message.reply_text(
                         f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_",
