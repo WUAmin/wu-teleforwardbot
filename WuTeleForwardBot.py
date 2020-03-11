@@ -762,7 +762,12 @@ def all_msg(update, context):
         for fr in settings.forward_rules:
             if fr['from']['id'] == update.effective_chat.id:
                 for kw in fr['keywords']:
-                    if kw == "*" or kw in update.effective_message.text.lower():
+                    msg_txt = ""
+                    if update.effective_message.text:
+                        msg_txt += update.effective_message.text.lower() + " "
+                    if update.effective_message.caption:
+                        msg_txt += update.effective_message.caption.lower()
+                    if kw == "*" or kw in msg_txt:
                         context.bot.forward_message(chat_id=fr['to']['id'],
                                                     from_chat_id=update.effective_message.chat_id,
                                                     message_id=update.effective_message.message_id)
