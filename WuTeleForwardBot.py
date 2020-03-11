@@ -699,16 +699,6 @@ def cmd_newforward(update, context):
 
 def all_msg(update, context):
     try:
-        auth_level = check_auth(update.effective_chat.id)
-        log_update_simple(update)
-        # ------------ ADMIN_LEVEL -------------
-        if auth_level.value >= AuthLevel.ADMIN.value:
-            pass
-        # ------------- MOD_LEVEL --------------
-        # ------------ USERS_LEVEL -------------
-        # --------- UNAUTHORIZED_LEVEL ---------
-        # --------------------------------------
-
         # Search for new contacts
         found_contact = False
         for cont in settings.contacts:
@@ -716,17 +706,31 @@ def all_msg(update, context):
                 found_contact = True
                 break
         if not found_contact:
-            settings.contacts.append({
+            new_contact = {
                 "id": update.effective_chat.id,
                 "type": update.effective_chat.type,
                 "title": update.effective_chat.title,
                 "first_name": update.effective_chat.first_name,
                 "last_name": update.effective_chat.last_name,
                 "username": update.effective_chat.username,
-            })
-            settings.save_json_settings(os.path.join(
-                os.path.dirname(sys.argv[0]), 'settings.json'))
+            }
+            settings.contacts.append(new_contact)
+            settings.save_json_settings(os.path.join(os.path.dirname(sys.argv[0]), 'settings.json'))
+            for admin in settings.chat_ids['admins']:
+                txt = "*New Contact*\n"
+                if new_contact['title']:
+                    txt += f"Title: *{update.effective_chat.title}*\n"
+                if new_contact['first_name'] or new_contact['last_name']:
+                    txt += f"Title: *{new_contact['first_name']} {new_contact['last_name']}*\n"
+                txt += f"ID: `{new_contact['id']}`\n"
+                if new_contact['username']:
+                    txt += f"Username: `@{new_contact['username']}`\n"
+                context.bot.send_message(chat_id=admin, text=txt, parse_mode=telegram.ParseMode.MARKDOWN,
+                                         reply_markup=ReplyKeyboardRemove())
+    except Exception as e:
+        print("Error: %s" % str(e))
 
+    try:
         # check forward rules on this msg
         for fr in settings.forward_rules:
             if fr['from']['id'] == update.effective_chat.id:
@@ -736,6 +740,19 @@ def all_msg(update, context):
                                                     from_chat_id=update.effective_message.chat_id,
                                                     message_id=update.effective_message.message_id)
                         break
+    except Exception as e:
+        print("Error: %s" % str(e))
+
+    try:
+        auth_level = check_auth(update.effective_chat.id)
+        log_update_simple(update)
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            pass
+        # ------------- MOD_LEVEL --------------
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
     except Exception as e:
         print("Error: %s" % str(e))
 
