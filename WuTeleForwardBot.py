@@ -654,6 +654,32 @@ def cmd_start(update, context):
         print("Error: %s" % str(e))
 
 
+def cmd_help(update, context):
+    try:
+        auth_level = check_auth(update.effective_chat.id)
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            txt = '/id'
+            txt += '/managebot'
+            txt += '/newforward'
+            context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
+        # ------------- MOD_LEVEL --------------
+        if auth_level.value >= AuthLevel.MOD.value:
+            txt = '/id'
+            txt += '/managebot'
+            txt += '/newforward'
+            context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
+        # ------------ USERS_LEVEL -------------
+        if auth_level.value >= AuthLevel.USER.value:
+            txt = '/id'
+            context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
+
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
+    except Exception as e:
+        print("Error: %s" % str(e))
+
+
 def cmd_id(update, context):
     try:
         auth_level = check_auth(update.effective_chat.id)
@@ -769,6 +795,10 @@ def main():
     # Register /start
     cmd_start_handler = CommandHandler('start', cmd_start)
     dispatcher.add_handler(cmd_start_handler)
+
+    # Register /help
+    cmd_help_handler = CommandHandler('help', cmd_help)
+    dispatcher.add_handler(cmd_help_handler)
 
     # Register /id
     cmd_id_handler = CommandHandler('id', cmd_id)
