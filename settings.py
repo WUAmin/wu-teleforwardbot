@@ -8,7 +8,8 @@ class AuthLevel(Enum):
     USER = 20
     UNAUTHORIZED = -1
 
-version = 1.6
+
+version = "1.6.5"
 api_token: str = "1"
 chat_ids: dict
 forward_rules: list
