@@ -51,10 +51,10 @@ def button_manage_bot(update, context, must_edit=True):
         keyboard = []
         # ------------ ADMIN_LEVEL -------------
         if auth_level.value >= AuthLevel.ADMIN.value:
-            keyboard.append([[InlineKeyboardButton("Backup", callback_data='backup'),
+            keyboard.append([InlineKeyboardButton("Backup", callback_data='backup'),
                               InlineKeyboardButton("Update from git", callback_data='update_git')],
                              [InlineKeyboardButton("Restart Bot", callback_data='restart_bot'),
-                              InlineKeyboardButton("Stop Bot", callback_data='stop_bot')]])
+                              InlineKeyboardButton("Stop Bot", callback_data='stop_bot')])
         # ------------- MOD_LEVEL --------------
         if auth_level.value >= AuthLevel.MOD.value:
             keyboard.insert(0, [InlineKeyboardButton("Show Contacts", callback_data='show_contacts'),
