@@ -45,22 +45,34 @@ def log_update_simple(update):
 
 
 def button_manage_bot(update, context, must_edit=True):
-    query = update.callback_query
-    keyboard = [[InlineKeyboardButton("Show Contacts", callback_data='show_contacts'),
-                 InlineKeyboardButton("Show Rules", callback_data='show_rules')],
-                [InlineKeyboardButton("Backup", callback_data='backup'),
-                 InlineKeyboardButton("Update from git", callback_data='update_git')],
-                [InlineKeyboardButton("Restart Bot", callback_data='restart_bot'),
-                 InlineKeyboardButton("Stop Bot", callback_data='stop_bot')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    if must_edit:
-        query.reply_text('Please choose:',
-                         reply_markup=reply_markup,
-                         parse_mode=telegram.ParseMode.MARKDOWN)
-    else:
-        update.message.reply_text('Please choose:',
-                                  reply_markup=reply_markup,
-                                  parse_mode=telegram.ParseMode.MARKDOWN)
+    try:
+        auth_level = check_auth(update.effective_chat.id)
+        query = update.callback_query
+        keyboard = []
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            keyboard.append([[InlineKeyboardButton("Backup", callback_data='backup'),
+                              InlineKeyboardButton("Update from git", callback_data='update_git')],
+                             [InlineKeyboardButton("Restart Bot", callback_data='restart_bot'),
+                              InlineKeyboardButton("Stop Bot", callback_data='stop_bot')]])
+        # ------------- MOD_LEVEL --------------
+        if auth_level.value >= AuthLevel.MOD.value:
+            keyboard.insert(0, [InlineKeyboardButton("Show Contacts", callback_data='show_contacts'),
+                                InlineKeyboardButton("Show Rules", callback_data='show_rules')])
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            if must_edit:
+                query.edit_message_text('Please choose:',
+                                        reply_markup=reply_markup,
+                                        parse_mode=telegram.ParseMode.MARKDOWN)
+            else:
+                update.message.reply_text('Please choose:',
+                                          reply_markup=reply_markup,
+                                          parse_mode=telegram.ParseMode.MARKDOWN)
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
+    except Exception as e:
+        print("Error: %s" % str(e))
 
 
 def button_stop_bot_confirm(update, context, must_edit=True):
@@ -86,129 +98,197 @@ def buttons(update, context):
     query = update.callback_query
     if query.data == 'backup':
         # Send backup as reply
-        try:
-            query.edit_message_text(text="Sending backup...".format(len(settings.contacts)),
-                                    parse_mode=telegram.ParseMode.MARKDOWN)
-            context.bot.send_document(chat_id=update.effective_chat.id,
-                                      document=open(os.path.join(os.path.dirname(sys.argv[0]), 'settings.json'), 'rb'),
-                                      reply_to_message_id=update.effective_message.message_id)
-        except Exception as e:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
-                                     reply_to_message_id=update.effective_message.message_id)
-    if query.data == 'show_contacts':
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            try:
+                query.edit_message_text(text="Sending backup...".format(len(settings.contacts)),
+                                        parse_mode=telegram.ParseMode.MARKDOWN)
+                context.bot.send_document(chat_id=update.effective_chat.id,
+                                          document=open(os.path.join(os.path.dirname(sys.argv[0]), 'settings.json'),
+                                                        'rb'),
+                                          reply_to_message_id=update.effective_message.message_id)
+            except Exception as e:
+                context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                         reply_to_message_id=update.effective_message.message_id)
+        # ------------- MOD_LEVEL --------------
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
+    elif query.data == 'show_contacts':
         # Show Contacts
-        try:
-            query.edit_message_text(text="There was {} contacts".format(len(settings.contacts)),
-                                    parse_mode=telegram.ParseMode.MARKDOWN)
-            for c in settings.contacts:
-                msg = 'Title: *{}*\n'.format(c['title'])
-                msg += 'Type: *{}*\n'.format(c['type'])
-                msg += 'ID: `{}`\n'.format(c['id'])
-                msg += 'Name: *{} {}*\n'.format(c['first_name'], c['last_name'])
-                msg += 'Username: *{}*\n'.format(c['username'])
-                update.effective_message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
-        except Exception as e:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
-                                     reply_to_message_id=update.effective_message.message_id)
-    if query.data == 'show_rules':
+        # ------------ ADMIN_LEVEL -------------
+        # ------------- MOD_LEVEL --------------
+        if auth_level.value >= AuthLevel.MOD.value:
+            try:
+                query.edit_message_text(text="There was {} contacts".format(len(settings.contacts)),
+                                        parse_mode=telegram.ParseMode.MARKDOWN)
+                for c in settings.contacts:
+                    msg = 'Title: *{}*\n'.format(c['title'])
+                    msg += 'Type: *{}*\n'.format(c['type'])
+                    msg += 'ID: `{}`\n'.format(c['id'])
+                    msg += 'Name: *{} {}*\n'.format(c['first_name'], c['last_name'])
+                    msg += 'Username: *{}*\n'.format(c['username'])
+                    update.effective_message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
+            except Exception as e:
+                context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                         reply_to_message_id=update.effective_message.message_id)
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
+    elif query.data == 'show_rules':
         # Show Rules
-        try:
-            query.edit_message_text(text="There was {} rules".format(len(settings.forward_rules)),
-                                    parse_mode=telegram.ParseMode.MARKDOWN)
-            for r in settings.forward_rules:
-                keyboard = [[InlineKeyboardButton("Detail", callback_data=f"detail_rule_{r['uuid']}")],
-                            [InlineKeyboardButton("Delete", callback_data=f"delete_rule_{r['uuid']}")]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                update.effective_message.reply_text(
-                    f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_",
-                    reply_to_message_id=update.effective_message.message_id,
-                    reply_markup=reply_markup,
-                    parse_mode=telegram.ParseMode.MARKDOWN)
-        except Exception as e:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
-                                     reply_to_message_id=update.effective_message.message_id)
-    if query.data.startswith('delete_rule_'):
+        # ------------ ADMIN_LEVEL -------------
+        # ------------- MOD_LEVEL --------------
+        if auth_level.value >= AuthLevel.MOD.value:
+            try:
+                query.edit_message_text(text="There was {} rules".format(len(settings.forward_rules)),
+                                        parse_mode=telegram.ParseMode.MARKDOWN)
+                for r in settings.forward_rules:
+                    keyboard = [[InlineKeyboardButton("Detail", callback_data=f"detail_rule_{r['uuid']}")],
+                                [InlineKeyboardButton("Delete", callback_data=f"delete_rule_{r['uuid']}")]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    update.effective_message.reply_text(
+                        f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_",
+                        reply_to_message_id=update.effective_message.message_id,
+                        reply_markup=reply_markup,
+                        parse_mode=telegram.ParseMode.MARKDOWN)
+            except Exception as e:
+                context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                         reply_to_message_id=update.effective_message.message_id)
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
+    elif query.data.startswith('delete_rule_'):
         # Delete Rules
-        try:
-            r_uuid = query.data[12:]
-            # query.edit_message_text(text="Deleting rule".format(len(settings.forward_rules)),
-            #                         parse_mode=telegram.ParseMode.MARKDOWN)
-            for r in settings.forward_rules:
-                if r['uuid'] == r_uuid:
-                    query.edit_message_text(
-                        f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_\n\n🗑 Deleted.",
-                        reply_to_message_id=update.effective_message.message_id,
-                        parse_mode=telegram.ParseMode.MARKDOWN)
-                    settings.forward_rules.remove(r)
-        except Exception as e:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
-                                     reply_to_message_id=update.effective_message.message_id)
-    if query.data.startswith('detail_rule_'):
+        # ------------ ADMIN_LEVEL -------------
+        # ------------- MOD_LEVEL --------------
+        if auth_level.value >= AuthLevel.MOD.value:
+            try:
+                r_uuid = query.data[12:]
+                # query.edit_message_text(text="Deleting rule".format(len(settings.forward_rules)),
+                #                         parse_mode=telegram.ParseMode.MARKDOWN)
+                for r in settings.forward_rules:
+                    if r['uuid'] == r_uuid:
+                        query.edit_message_text(
+                            f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_\n\n🗑 Deleted.",
+                            reply_to_message_id=update.effective_message.message_id,
+                            parse_mode=telegram.ParseMode.MARKDOWN)
+                        settings.forward_rules.remove(r)
+            except Exception as e:
+                context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                         reply_to_message_id=update.effective_message.message_id)
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
+    elif query.data.startswith('detail_rule_'):
         # Detail Rules
-        try:
-            r_uuid = query.data[12:]
-            # query.edit_message_text(text="Deleting rule".format(len(settings.forward_rules)),
-            #                         parse_mode=telegram.ParseMode.MARKDOWN)
-            for r in settings.forward_rules:
-                if r['uuid'] == r_uuid:
-                    query.edit_message_text(
-                        f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_\n\n```{json.dumps(r, indent=2, sort_keys=True)}```",
-                        reply_to_message_id=update.effective_message.message_id,
-                        parse_mode=telegram.ParseMode.MARKDOWN)
-                    break
-        except Exception as e:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
-                                     reply_to_message_id=update.effective_message.message_id)
+        # ------------ ADMIN_LEVEL -------------
+        # ------------- MOD_LEVEL --------------
+        if auth_level.value >= AuthLevel.MOD.value:
+            try:
+                r_uuid = query.data[12:]
+                # query.edit_message_text(text="Deleting rule".format(len(settings.forward_rules)),
+                #                         parse_mode=telegram.ParseMode.MARKDOWN)
+                for r in settings.forward_rules:
+                    if r['uuid'] == r_uuid:
+                        query.edit_message_text(
+                            f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_\n\n```{json.dumps(r, indent=2, sort_keys=True)}```",
+                            reply_to_message_id=update.effective_message.message_id,
+                            parse_mode=telegram.ParseMode.MARKDOWN)
+                        break
+            except Exception as e:
+                context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                         reply_to_message_id=update.effective_message.message_id)
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
     elif query.data == 'update_git':
         # Update bot from git
-        try:
-            p = os.popen(r'cd "{}";git pull'.format(
-                os.path.dirname(os.path.realpath(sys.argv[0]))))
-            msg = p.read()
-            query.edit_message_text(text="Update from git: ```{}```".format(msg),
-                                    parse_mode=telegram.ParseMode.MARKDOWN)
-        except Exception as e:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
-                                     reply_to_message_id=update.effective_message.message_id)
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            try:
+                p = os.popen(r'cd "{}";git pull'.format(
+                    os.path.dirname(os.path.realpath(sys.argv[0]))))
+                msg = p.read()
+                query.edit_message_text(text="Update from git: ```{}```".format(msg),
+                                        parse_mode=telegram.ParseMode.MARKDOWN)
+            except Exception as e:
+                context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                         reply_to_message_id=update.effective_message.message_id)
+        # ------------- MOD_LEVEL --------------
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
     elif query.data == 'restart_bot':
         # Restart Bot
-        try:
-            msd_d = query.edit_message_text(
-                text="Restarting Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
-            p = os.popen(
-                r'cd "{}";kill -9 {}; python3 {} --restart={},{}'.format(os.path.dirname(os.path.realpath(sys.argv[0])),
-                                                                         os.getpid(), os.path.realpath(sys.argv[0]),
-                                                                         msd_d['message_id'], msd_d['chat']['id']))
-            msg = p.read()
-            query.edit_message_text(text="Restarting Bot: ```{}```".format(msg),
-                                    parse_mode=telegram.ParseMode.MARKDOWN)
-        except Exception as e:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
-                                     reply_to_message_id=update.effective_message.message_id)
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            try:
+                msd_d = query.edit_message_text(
+                    text="Restarting Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
+                p = os.popen(
+                    r'cd "{}";kill -9 {}; python3 {} --restart={},{}'.format(
+                        os.path.dirname(os.path.realpath(sys.argv[0])),
+                        os.getpid(), os.path.realpath(sys.argv[0]),
+                        msd_d['message_id'], msd_d['chat']['id']))
+                msg = p.read()
+                query.edit_message_text(text="Restarting Bot: ```{}```".format(msg),
+                                        parse_mode=telegram.ParseMode.MARKDOWN)
+            except Exception as e:
+                context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                         reply_to_message_id=update.effective_message.message_id)
+        # ------------- MOD_LEVEL --------------
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
     elif query.data == 'stop_bot':
         # Stop bot
-        button_stop_bot_confirm(update, context, must_edit=True)
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            button_stop_bot_confirm(update, context, must_edit=True)
+        # ------------- MOD_LEVEL --------------
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
     elif query.data == 'stop_bot_yes':
         # Yes to stop bot
-        try:
-            query.edit_message_text(
-                text="Stopping Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
-            p = os.popen(
-                r'cd "{}";kill -9 {}'.format(os.path.dirname(os.path.realpath(sys.argv[0])), os.getpid()))
-            msg = p.read()
-            query.edit_message_text(text="Stpping bot Bot: ```{}```".format(
-                msg), parse_mode=telegram.ParseMode.MARKDOWN)
-        except Exception as e:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
-                                     reply_to_message_id=update.effective_message.message_id)
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            try:
+                query.edit_message_text(
+                    text="Stopping Bot...", parse_mode=telegram.ParseMode.MARKDOWN)
+                p = os.popen(
+                    r'cd "{}";kill -9 {}'.format(os.path.dirname(os.path.realpath(sys.argv[0])), os.getpid()))
+                msg = p.read()
+                query.edit_message_text(text="Stpping bot Bot: ```{}```".format(
+                    msg), parse_mode=telegram.ParseMode.MARKDOWN)
+            except Exception as e:
+                context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
+                                         reply_to_message_id=update.effective_message.message_id)
+        # ------------- MOD_LEVEL --------------
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
     elif query.data == 'stop_bot_no':
         # No to stop bot
-        query.edit_message_text(text="Good!", parse_mode=telegram.ParseMode.MARKDOWN)
+        # ------------ ADMIN_LEVEL -------------
+        if auth_level.value >= AuthLevel.ADMIN.value:
+            query.edit_message_text(text="Good!", parse_mode=telegram.ParseMode.MARKDOWN)
+        # ------------- MOD_LEVEL --------------
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
     elif query.data == 'my_chat_id':
         # Show chat id
-        query.edit_message_text(
-            text="Your User ID: `{}`\nLevel: *{}*".format(update.effective_chat.id, auth_level.name),
-            parse_mode=telegram.ParseMode.MARKDOWN)
+        # ------------ ADMIN_LEVEL -------------
+        # ------------- MOD_LEVEL --------------
+        if auth_level.value >= AuthLevel.MOD.value:
+            query.edit_message_text(
+                text="Your User ID: `{}`\nLevel: *{}*".format(update.effective_chat.id, auth_level.name),
+                parse_mode=telegram.ParseMode.MARKDOWN)
+        # ------------ USERS_LEVEL -------------
+        # --------- UNAUTHORIZED_LEVEL ---------
+        # --------------------------------------
 
 
 def newforward_start(update, context):
@@ -593,17 +673,7 @@ def cmd_id(update, context):
 
 
 def cmd_manage_bot(update, context):
-    try:
-        auth_level = check_auth(update.effective_chat.id)
-        # ------------ ADMIN_LEVEL -------------
-        if auth_level.value >= AuthLevel.ADMIN.value:
-            button_manage_bot(update, context, must_edit=False)
-        # ------------- MOD_LEVEL --------------
-        # ------------ USERS_LEVEL -------------
-        # --------- UNAUTHORIZED_LEVEL ---------
-        # --------------------------------------
-    except Exception as e:
-        print("Error: %s" % str(e))
+    button_manage_bot(update, context, must_edit=False)
 
 
 def cmd_newforward(update, context):
