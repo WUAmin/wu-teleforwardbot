@@ -120,7 +120,7 @@ def buttons(update, context):
                             [InlineKeyboardButton("Delete", callback_data=f"delete_rule_{r['uuid']}")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 update.effective_message.reply_text(
-                    f"*{r['from']['title']}* `->` *{r['to']['title']}*\n{'|'.join(r['keywords'])}",
+                    f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_",
                     reply_to_message_id=update.effective_message.message_id,
                     reply_markup=reply_markup,
                     parse_mode=telegram.ParseMode.MARKDOWN)
@@ -136,7 +136,7 @@ def buttons(update, context):
             for r in settings.forward_rules:
                 if r['uuid'] == r_uuid:
                     query.edit_message_text(
-                        f"*{r['from']['title']}* `->` *{r['to']['title']}*\n{'|'.join(r['keywords'])}\n\n🗑 Deleted.",
+                        f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_\n\n🗑 Deleted.",
                         reply_to_message_id=update.effective_message.message_id,
                         parse_mode=telegram.ParseMode.MARKDOWN)
                     settings.forward_rules.remove(r)
@@ -152,7 +152,7 @@ def buttons(update, context):
             for r in settings.forward_rules:
                 if r['uuid'] == r_uuid:
                     query.edit_message_text(
-                        f"*{r['from']['title']}* `->` *{r['to']['title']}*\n{'|'.join(r['keywords'])}\n\n```{json.dumps(r, indent=2, sort_keys=True)}```",
+                        f"*{r['from']['title']}* `->` *{r['to']['title']}*\n_{'|'.join(r['keywords'])}_\n\n```{json.dumps(r, indent=2, sort_keys=True)}```",
                         reply_to_message_id=update.effective_message.message_id,
                         parse_mode=telegram.ParseMode.MARKDOWN)
                     break
