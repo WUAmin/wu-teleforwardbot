@@ -451,7 +451,7 @@ def newforward_get_keywords(update, context):
                     if k == '*':
                         txt += ' ▪️️ `*` _(Everything)_\n'
                     else:
-                        txt += f' ▪️️ `{k}`\n'
+                        txt += f' ▪️️ `{k.lower()}`\n'
                 logger.info(txt)
                 update.message.reply_text(txt, parse_mode=telegram.ParseMode.MARKDOWN,
                                           reply_markup=ReplyKeyboardRemove())
@@ -731,7 +731,7 @@ def all_msg(update, context):
         for fr in settings.forward_rules:
             if fr['from']['id'] == update.effective_chat.id:
                 for kw in fr['keywords']:
-                    if kw == "*" or kw in update.effective_message.text:
+                    if kw == "*" or kw in update.effective_message.text.lower():
                         context.bot.forward_message(chat_id=fr['to']['id'],
                                                     from_chat_id=update.effective_message.chat_id,
                                                     message_id=update.effective_message.message_id)
