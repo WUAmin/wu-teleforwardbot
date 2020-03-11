@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def check_auth(chat_id):
     if chat_id in settings.chat_ids['admins']:
         return AuthLevel.ADMIN
-    elif chat_id in settings.chat_ids['groups']:
+    elif chat_id in settings.chat_ids['mods']:
         return AuthLevel.MOD
     elif chat_id in settings.chat_ids['users']:
         return AuthLevel.USER
