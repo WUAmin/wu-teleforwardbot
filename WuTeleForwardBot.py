@@ -174,6 +174,7 @@ def buttons(update, context):
                             reply_to_message_id=update.effective_message.message_id,
                             parse_mode=telegram.ParseMode.MARKDOWN)
                         settings.forward_rules.remove(r)
+                        settings.save_json_settings(os.path.join(os.path.dirname(sys.argv[0]), 'settings.json'))
             except Exception as e:
                 context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Error: {}".format(str(e)),
                                          reply_to_message_id=update.effective_message.message_id)
