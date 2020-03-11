@@ -659,19 +659,19 @@ def cmd_help(update, context):
         auth_level = check_auth(update.effective_chat.id)
         # ------------ ADMIN_LEVEL -------------
         if auth_level.value >= AuthLevel.ADMIN.value:
-            txt = '/id'
-            txt += '/managebot'
-            txt += '/newforward'
+            txt = '/id\n'
+            txt += '/managebot\n'
+            txt += '/newforward\n'
             context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
         # ------------- MOD_LEVEL --------------
         if auth_level.value >= AuthLevel.MOD.value:
-            txt = '/id'
-            txt += '/managebot'
-            txt += '/newforward'
+            txt = '/id\n'
+            txt += '/managebot\n'
+            txt += '/newforward\n'
             context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
         # ------------ USERS_LEVEL -------------
         if auth_level.value >= AuthLevel.USER.value:
-            txt = '/id'
+            txt = '/id\n'
             context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
 
         # --------- UNAUTHORIZED_LEVEL ---------
