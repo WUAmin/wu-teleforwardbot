@@ -726,7 +726,7 @@ def main():
                 mid, cid = arg.split('=')[1].split(',')
                 updater.bot.edit_message_text(chat_id=cid,
                                               message_id=mid,
-                                              text="Bot Restarted",
+                                              text="Bot Restarted.\nVersion {}".format(settings.version),
                                               parse_mode=telegram.ParseMode.MARKDOWN)
                 break
         except Exception as e:
