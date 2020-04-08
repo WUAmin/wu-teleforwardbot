@@ -1,0 +1,8 @@
+[Unit]
+After=network.target network-online.target
+
+[Service]
+ExecStart=/root/wu-teleforwardbot/venv/bin/python /root/wu-teleforwardbot/WuTeleForwardBot.py
+
+[Install]
+WantedBy=default.target
